@@ -19,27 +19,13 @@ import os
 import warnings
 
 import os
-# import kaggle
 
-# kaggle.api.authenticate()
-# kaggle.api.dataset_download_files()
+import kaggle
+
+kaggle.api.authenticate()
+kaggle.api.dataset_download_files('braindeadcoder/lending-club-data', path='.',unzip=True)
 
 # # Configurações Iniciais
 pd.set_option('display.max_columns', None)
 pd.set_option('display.float_format', lambda x: '%.2f' % x)
 warnings.filterwarnings('ignore')
-
-
-import kagglehub
-
-# Download latest version
-path = kagglehub.dataset_download("adarshsng/lending-club-loan-data-csv")
-
-print("Path to dataset files:", path)
-
-df_raw = pd.read_csv(
-    path,
-    low_memory=False,
-    on_bad_lines='skip'
-)
-print(df_raw.shape)
