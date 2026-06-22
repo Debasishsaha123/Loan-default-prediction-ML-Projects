@@ -31,4 +31,5 @@ pd.set_option('display.float_format', lambda x: '%.2f' % x)
 warnings.filterwarnings('ignore')
 
 df=pd.read_csv('loan_data.csv')
-print(df.head(10))
+print(df.info())
+
