@@ -2,14 +2,6 @@
 
 Predicting whether a borrower will fully repay or default on a loan, using historical Lending Club data and gradient-boosted / ensemble tree models.
 
-![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python&logoColor=white)
-![Scikit-learn](https://img.shields.io/badge/scikit--learn-Machine%20Learning-F7931E?logo=scikit-learn&logoColor=white)
-![XGBoost](https://img.shields.io/badge/XGBoost-Classification-189A3D)
-![License](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Status](https://img.shields.io/badge/Status-Completed-success)
-
-
-
 ## 📖 About The Project
 
 **Lending Club** was a peer-to-peer lending platform that connected individual borrowers with investors willing to fund personal loans. Each loan record contains borrower attributes (income, credit history, employment, home ownership, debt ratios, etc.) along with the final outcome of the loan.
