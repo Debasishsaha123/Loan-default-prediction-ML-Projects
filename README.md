@@ -2,6 +2,13 @@
 
 Predicting whether a borrower will fully repay or default on a loan, using historical Lending Club data and gradient-boosted / ensemble tree models.
 
+![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python&logoColor=white)
+![Scikit-learn](https://img.shields.io/badge/scikit--learn-Machine%20Learning-F7931E?logo=scikit-learn&logoColor=white)
+![XGBoost](https://img.shields.io/badge/XGBoost-Classification-189A3D)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Status](https://img.shields.io/badge/Status-Completed-success)
+
+
 
 ## 📖 About The Project
 
@@ -19,7 +26,7 @@ This project was built to walk through a complete, realistic credit-risk modelin
 
 **Dataset overview:** the raw dataset (`lending_club_loan_two.csv`) contains **396,030 loan records across 27 columns**, covering loan terms, borrower credit attributes, and the loan outcome. A companion file (`lending_club_info.csv`) provides plain-language descriptions for each column.
 
-**Target variable:** `loan_status`, originally a two-class string field (`Fully Paid` / `Charged Off`), mapped to a binary target — `1` = Fully Paid, `0` = Charged Off (defaulted). The dataset is **imbalanced**, with fully-paid loans making up the large majority of records.
+**Target variable:** `loan_status`, originally a two-class string field (`Fully Paid` / `Charged Off`), mapped to a binary target — `1` = Default / Charged Off, `0` = Fully Paid. The dataset is **imbalanced**, with fully-paid loans making up the large majority of records.
 
 ### Built With
 
@@ -98,7 +105,7 @@ Performed in `data_preprocessing.ipynb`, applied to the raw 396,030-row, 27-colu
 | Drop `title` | Column removed entirely | Free-text description that largely duplicates the `purpose` column |
 | `mort_acc` missing values | Filled with the column mean | Missingness was limited and mean imputation preserved the overall distribution |
 | Remaining missing values | Rows dropped via `dropna()` | Affected columns had under 0.5% missing data — dropping was cheaper than imputing and had negligible impact on dataset size (811 rows and 3 columns removed in total) |
-| Target encoding | `loan_status` mapped `Fully Paid → 1`, `Charged Off → 0` | Converts the target into a binary classification label |
+| Target encoding | `loan_status` mapped `Fully Paid → 0`, `Charged Off → 1` | Converts the target into a binary classification label |
 | `term` cleanup | Extracted the integer number of months from the string (e.g. `"36 months"` → `36`) | Converts a text field into a usable numeric feature |
 | Drop `sub_grade` | Column removed | Redundant with `grade`, which already captures the same credit-risk tier at coarser granularity |
 | `home_ownership` cleanup | Rare categories `NONE` and `ANY` merged into `OTHER` | Reduces sparse/rare categories before one-hot encoding |
@@ -127,7 +134,7 @@ Trained and compared in `model_training.ipynb`:
 - **Advantages:** typically high predictive accuracy on tabular data, built-in regularization, handles feature interactions well.
 - **Limitations:** more hyperparameters to tune than simpler models, longer training time when combined with extensive hyperparameter search.
 - **Class imbalance handling:** `scale_pos_weight` set to the ratio of negative to positive class counts in the training data.
-- **Hyperparameter tuning:** `RandomizedSearchCV` over `n_estimators`, `max_depth`, `learning_rate`, `subsample`, `colsample_bytree`, and `min_child_weight`, using 3-fold cross-validation, 60 sampled parameter combinations, and `roc_auc` as the scoring metric.
+- **Hyperparameter tuning:** `RandomizedSearchCV` over `n_estimators`, `max_depth`, `learning_rate`, `subsample`, `colsample_bytree`, and `min_child_weight`, using 3-fold cross-validation and randomized hyperparameter search, with `average_precision` / PR-AUC used as the primary model-selection metric.
 - **Best parameters found:** `n_estimators=500`, `max_depth=6`, `learning_rate=0.05`, `subsample=0.8`, `colsample_bytree=0.8`, `min_child_weight=5` (Best CV ROC-AUC: **0.9078**).
 
 ### Random Forest Classifier (`RandomForestClassifier`)
@@ -138,12 +145,12 @@ Trained and compared in `model_training.ipynb`:
 
 ### Model Comparison
 
-| Model | Train Accuracy | Test Accuracy | Test ROC-AUC |
-|---|---|---|---|
-| **XGBoost (tuned)** | 89.42% | 88.96% | 0.732 |
-| **Random Forest (default)** | 100.00% | 88.88% | 0.725 |
+| Model | ROC-AUC | PR-AUC |
+|---|---:|---:|
+| **Random Forest** | **0.889** | **0.762** |
+| **XGBoost** | **0.908** | **0.783** |
 
-> Random Forest reaching 100% training accuracy alongside a much lower test score is a clear sign of overfitting on the training set with default settings, whereas the tuned XGBoost model shows a much smaller train/test gap.
+> XGBoost outperformed Random Forest on both ROC-AUC and PR-AUC, so it was selected as the final model. PR-AUC was prioritized because Default is the minority positive class, while ROC-AUC was retained as a complementary measure of overall discrimination.
 
 ---
 
@@ -154,11 +161,26 @@ Both models were evaluated on the held-out test set using:
 - **Accuracy Score** — overall proportion of correct predictions; reported for context but not the primary metric given class imbalance.
 - **Precision, Recall, F1-score** (via `classification_report`) — reported per class, important because in loan default prediction the cost of missing a defaulter (false negative on the "Charged Off" class) is typically much higher than a false positive.
 - **Confusion Matrix** — visualized with `ConfusionMatrixDisplay` for both models, showing the counts of correctly/incorrectly classified `Default` vs `Fully-Paid` loans on the test set.
-- **ROC-AUC / ROC Curve** — used both as the scoring metric during `RandomizedSearchCV` and for final model comparison via `RocCurveDisplay`, since it captures the model's ability to rank borrowers by risk independent of a single classification threshold.
+- **ROC-AUC / ROC Curve** — used as a complementary measure of overall discrimination between Default and Fully-Paid borrowers.
+- **PR-AUC / Precision-Recall Curve** — prioritized for the imbalanced default-class problem and used to assess precision-recall performance across classification thresholds.
 
 These metrics matter here specifically because loan default prediction is an **imbalanced classification problem** — a model can score a high raw accuracy just by predicting "Fully Paid" for nearly everyone, which is exactly why recall on the default class, and ROC-AUC, are tracked alongside accuracy rather than relying on accuracy alone.
 
 ---
+
+## 📊 Final Test Results
+
+The final XGBoost model was evaluated on the held-out test set.
+
+| Metric | XGBoost Test Result |
+|---|---:|
+| Accuracy | **81.01%** |
+| Default Precision | **50.95%** |
+| Default Recall | **79.93%** |
+| Default F1-score | **62.23%** |
+| ROC-AUC | **0.908** |
+| PR-AUC | **0.783** |
+
 
 ## ✨ Key Features
 
@@ -173,6 +195,19 @@ These metrics matter here specifically because loan default prediction is an **i
 - Reusable train/test artifact (`processed_data.pkl`) decoupling preprocessing from modeling
 
 ---
+
+## 🔮 Future Improvements
+
+- [ ] Improve domain-specific feature engineering for borrower risk
+- [ ] Perform deeper false-positive / false-negative error analysis
+- [ ] Further tune XGBoost using Average Precision as the optimization metric
+- [ ] Experiment with LightGBM and CatBoost
+- [ ] Compare alternative class-imbalance strategies
+- [ ] Evaluate probability calibration
+- [ ] Tune the classification threshold using a business cost matrix
+- [ ] Add SHAP-based model explainability
+- [ ] Add model monitoring and drift detection
+- [ ] Build a Streamlit interface for default-risk prediction
 
 ## 📁 Repository Structure
 
